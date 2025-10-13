@@ -1,3 +1,15 @@
+<p align="center">
+  <img src="data_raw/elite.png" alt="Elite Ingenieros" width="100">
+</p>
+
+<h1 align="center">🧠 CONTROL ANS – ELITE INGENIEROS S.A.S.</h1>
+
+<p align="center">
+  <b>Autor:</b> Héctor A. Gaviria • <b>Año:</b> 2025  
+  <br><b>Proyecto:</b> Panel Empresarial Automatizado en Python + Tkinter  
+  <br>© 2025 <b>Elite Ingenieros S.A.S.</b> | <i>Pasión por lo que hacemos</i>
+</p>
+---
 # 🧠 Control ANS – Elite Ingenieros S.A.S.
 
 **Autor:** Héctor A. Gaviria  
@@ -85,3 +97,5 @@ Desarrollado por Héctor A. Gaviria
 Integración directa con Power BI para actualización en tiempo real.
 Automatización por tareas programadas (Scheduler).
 Publicación en entorno corporativo con logs centralizados.
+
+<p align="center"> <sub>Hecho con 💚 en Python • Tkinter • Pandas</sub> </p> ```
