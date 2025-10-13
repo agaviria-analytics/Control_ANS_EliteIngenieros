@@ -1,0 +1,21 @@
+# 🧠 Archivos y carpetas a ignorar por Git
+
+# Entorno virtual
+venv/
+
+# Archivos temporales de Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Archivos de sistema
+.DS_Store
+Thumbs.db
+
+# Archivos generados por el programa
+data_clean/*.xlsx
+*.log
+
+# Configuración local de VSCode
+.vscode/
