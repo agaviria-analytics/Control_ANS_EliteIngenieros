@@ -97,5 +97,3 @@ Desarrollado por Héctor A. Gaviria
 Integración directa con Power BI para actualización en tiempo real.
 Automatización por tareas programadas (Scheduler).
 Publicación en entorno corporativo con logs centralizados.
-
-<p align="center"> <sub>Hecho con 💚 en Python • Tkinter • Pandas</sub> </p> ```
