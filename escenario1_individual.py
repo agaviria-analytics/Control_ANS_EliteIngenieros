@@ -16,11 +16,63 @@ from pathlib import Path
 # CONFIGURACIÓN GENERAL
 # ------------------------------------------------------------
 WEEKMASK = "1111100"  # Lunes a viernes hábiles
+
+# Lista de días festivos nacionales (puedes ampliarla con los que maneja tu empresa o EPM)
+# ------------------------------------------------------------
+# LISTA DE FESTIVOS NACIONALES (2025–2026)
+# ------------------------------------------------------------
+FESTIVOS = [
+    # 2025
+    "2025-01-01",  # Año Nuevo
+    "2025-01-06",  # Reyes Magos
+    "2025-03-24",  # San José (trasladado)
+    "2025-04-17",  # Jueves Santo
+    "2025-04-18",  # Viernes Santo
+    "2025-05-01",  # Día del Trabajo
+    "2025-05-26",  # Ascensión del Señor (trasladado)
+    "2025-06-16",  # Corpus Christi (trasladado)
+    "2025-06-23",  # Sagrado Corazón (trasladado)
+    "2025-07-07",  # San Pedro y San Pablo (trasladado)
+    "2025-08-07",  # Batalla de Boyacá
+    "2025-08-18",  # Asunción de la Virgen (trasladado)
+    "2025-10-13",  # Día de la Raza (trasladado)
+    "2025-11-03",  # Todos los Santos (trasladado)
+    "2025-11-17",  # Independencia de Cartagena (trasladado)
+    "2025-12-08",  # Inmaculada Concepción
+    "2025-12-25",  # Navidad
+
+    # 2026
+    "2026-01-01",  # Año Nuevo
+    "2026-01-12",  # Reyes Magos (trasladado)
+    "2026-03-23",  # San José (trasladado)
+    "2026-04-02",  # Jueves Santo
+    "2026-04-03",  # Viernes Santo
+    "2026-05-01",  # Día del Trabajo
+    "2026-05-18",  # Ascensión del Señor (trasladado)
+    "2026-06-08",  # Corpus Christi (trasladado)
+    "2026-06-15",  # Sagrado Corazón (trasladado)
+    "2026-06-29",  # San Pedro y San Pablo (trasladado)
+    "2026-07-20",  # Independencia de Colombia
+    "2026-08-07",  # Batalla de Boyacá
+    "2026-08-17",  # Asunción de la Virgen (trasladado)
+    "2026-10-12",  # Día de la Raza
+    "2026-11-02",  # Todos los Santos (trasladado)
+    "2026-11-16",  # Independencia de Cartagena (trasladado)
+    "2026-12-08",  # Inmaculada Concepción
+    "2026-12-25",  # Navidad
+]
+
+# Convertimos a tipo fecha (datetime64) para que Numpy las use correctamente
+FESTIVOS = np.array(FESTIVOS, dtype='datetime64[D]')
+
+# Convertimos a tipo fecha (datetime64) para que Numpy las use correctamente
+FESTIVOS = np.array(FESTIVOS, dtype='datetime64[D]')
+
 ALERTA_UMBRAL_DIAS = 2  # Alerta si faltan 2 días o menos
 
 DIAS_PACTADOS_CONFIG = {
     "HV": {"URBANA": 5, "URBANOS": 5, "URBANO": 5, "URBAN": 5, "RURAL": 8, "RURALES": 8},
-    "PUNTOS": {"URBANA": 5, "RURAL": 8},
+    "PUNTOS": {"URBANA": 4, "RURAL": 4},
     "PREPAGO": {"URBANA": 5, "RURAL": 8},
 }
 
@@ -46,12 +98,37 @@ def detectar_columna_ru(df):
     return None
 
 
+def add_business_days_keep_time(dt, n_days):
+    """Suma n días hábiles (lunes-viernes) sin contar festivos."""
+    if pd.isna(dt):
+        return pd.NaT
+    date_part = np.datetime64(dt.date())
+    time_part = dt.time()
+    new_date = np.busday_offset(
+        date_part,
+        n_days,
+        roll='forward',
+        weekmask=WEEKMASK,
+        holidays=FESTIVOS
+    )
+    return datetime.combine(pd.to_datetime(str(new_date)).date(), time_part)
+
+
+def business_days_between(start_dt, end_dt):
+    """Cuenta días hábiles (lunes-viernes) sin incluir festivos."""
+    if pd.isna(start_dt) or pd.isna(end_dt):
+        return np.nan
+    start_date = np.datetime64(start_dt.date() + timedelta(days=1))
+    end_date = np.datetime64(end_dt.date())
+    return int(np.busday_count(start_date, end_date, weekmask=WEEKMASK, holidays=FESTIVOS))
+
+
 # ------------------------------------------------------------
 # LIMPIEZA PRINCIPAL
 # ------------------------------------------------------------
 def limpiar_individual(df, dataset):
     # ------------------------------------------------------------
-    # LIMPIEZA DE NOMBRES DE COLUMNAS Y RENOMBRE CLAVE
+    # LIMPIEZA DE NOMBRES DE COLUMNAS
     # ------------------------------------------------------------
     df.columns = (
         df.columns.str.strip()
@@ -60,7 +137,7 @@ def limpiar_individual(df, dataset):
         .str.replace("  ", " ")
     )
 
-    # 🔍 Elimina columnas duplicadas reales o con espacios invisibles
+    # 🔍 Elimina columnas duplicadas invisibles
     clean_cols = []
     final_cols = []
     for col in df.columns:
@@ -68,8 +145,6 @@ def limpiar_individual(df, dataset):
         if base not in clean_cols:
             clean_cols.append(base)
             final_cols.append(col)
-        else:
-            print(f"⚠️ Columna duplicada eliminada: {col}")
     df = df.loc[:, final_cols]
 
     # ------------------------------------------------------------
@@ -95,12 +170,14 @@ def limpiar_individual(df, dataset):
 
     df.rename(columns=renombres, inplace=True)
 
-    # Asegurar columnas necesarias
+    # ------------------------------------------------------------
+    # ASEGURAR COLUMNAS CLAVE
+    # ------------------------------------------------------------
     for col in ["PEDIDO", "MUNICIPIO", "FECHA_INGRESO", "FECHA_INICIO_ANS"]:
         if col not in df.columns:
             df[col] = pd.NA
 
-    # Detectar columna R/U
+    # Detectar columna ZONA o R/U
     col_zona = detectar_columna_ru(df)
     if col_zona:
         df.rename(columns={col_zona: "ZONA"}, inplace=True)
@@ -111,7 +188,7 @@ def limpiar_individual(df, dataset):
         df["SECTOR"] = np.nan
 
     # ------------------------------------------------------------
-    # DICCIONARIO MUNICIPIOS
+    # NORMALIZAR MUNICIPIO Y ZONA
     # ------------------------------------------------------------
     MUNICIPIOS_MAP = {
         "MED": "MEDELLÍN",
@@ -129,7 +206,6 @@ def limpiar_individual(df, dataset):
         .replace(MUNICIPIOS_MAP)
     )
 
-    # Normalizar zona
     df["ZONA"] = (
         df["ZONA"]
         .astype(str)
@@ -138,13 +214,32 @@ def limpiar_individual(df, dataset):
         .str.replace("-", "")
         .str.replace("_", "")
     )
+    # ------------------------------------------------------------
+# 🔹 LIMPIEZA DE ZONA (URBANA / RURAL / SIN DATO)
+# ------------------------------------------------------------
+    reemplazos_zona = {
+        "URBAN": "URBANA",
+        "URBANO": "URBANA",
+        "URBANA": "URBANA",
+        "RURAL": "RURAL",
+        "RURALES": "RURAL",
+        "SIN DATO": "SIN DATO",
+        "NAN": "SIN DATO",
+        "": "SIN DATO",
+        "NONE": "SIN DATO"
+    }
+
+    df["ZONA"] = df["ZONA"].replace(reemplazos_zona)
+    print(f"📍 Limpieza aplicada a columna ZONA en dataset {dataset.upper()}.")
+    print("Valores únicos después de limpieza:", df["ZONA"].dropna().unique())
+
 
     # Convertir fechas
     df["FECHA_INGRESO"] = df["FECHA_INGRESO"].apply(to_datetime)
     df["FECHA_INICIO_ANS"] = df["FECHA_INICIO_ANS"].apply(to_datetime)
 
     # ------------------------------------------------------------
-    # DÍAS PACTADOS
+    # DÍAS PACTADOS POR ZONA O ACTIVIDAD
     # ------------------------------------------------------------
     if dataset.upper() == "PREPAGO":
         def dias_cumplimiento(row):
@@ -170,29 +265,20 @@ def limpiar_individual(df, dataset):
     # ------------------------------------------------------------
     hoy = datetime.now()
 
-    def calcular_fecha_limite(fecha_inicio, dias_cump):
-        if pd.isna(fecha_inicio) or dias_cump == 0:
-            return pd.NaT
-        date_part = np.datetime64(fecha_inicio.date())
-        time_part = fecha_inicio.time()
-        nueva_fecha = np.busday_offset(date_part, dias_cump, roll='forward', weekmask=WEEKMASK)
-        return datetime.combine(pd.to_datetime(str(nueva_fecha)).date(), time_part)
-
+    # Fecha límite considerando festivos
     df["FECHA_LIMITE"] = df.apply(
-        lambda r: calcular_fecha_limite(r["FECHA_INICIO_ANS"], r["DIAS_CUMP"]), axis=1
+        lambda r: add_business_days_keep_time(r["FECHA_INICIO_ANS"], r["DIAS_CUMP"]),
+        axis=1
     )
 
+    # Días transcurridos hábiles (sin festivos)
     df["DIAS_TRANSCURRIDOS"] = df.apply(
-        lambda r: np.busday_count(
-            np.datetime64(r["FECHA_INICIO_ANS"].date() + timedelta(days=1)),
-            np.datetime64(hoy.date()),
-            weekmask=WEEKMASK
-        )
-        if pd.notna(r["FECHA_INICIO_ANS"])
-        else np.nan,
+        lambda r: business_days_between(r["FECHA_INICIO_ANS"], hoy)
+        if pd.notna(r["FECHA_INICIO_ANS"]) else np.nan,
         axis=1,
     )
 
+    # Tiempo restante y estado
     def tiempo_restante(row):
         if pd.isna(row["FECHA_LIMITE"]):
             return ""
@@ -234,18 +320,9 @@ def limpiar_individual(df, dataset):
     # SALIDA FINAL
     # ------------------------------------------------------------
     columnas_finales = [
-        "PEDIDO",
-        "MUNICIPIO",
-        "FECHA_INGRESO",
-        "FECHA_INICIO_ANS",
-        "ZONA",
-        "SECTOR",
-        "DIAS_CUMP",
-        "FECHA_LIMITE",
-        "DIAS_TRANSCURRIDOS",
-        "DIAS_RESTANTES",
-        "ESTADO",
-        "ESTADO_DIGITADO",
+        "PEDIDO", "MUNICIPIO", "FECHA_INGRESO", "FECHA_INICIO_ANS",
+        "ZONA", "SECTOR", "DIAS_CUMP", "FECHA_LIMITE",
+        "DIAS_TRANSCURRIDOS", "DIAS_RESTANTES", "ESTADO", "ESTADO_DIGITADO"
     ]
 
     df_final = df[columnas_finales].copy()
@@ -280,14 +357,12 @@ def main():
     out.parent.mkdir(parents=True, exist_ok=True)
 
     # ------------------------------------------------------------
-    # ⚙️ Diagnóstico opcional de duplicados (solo resaltado visual)
+    # ⚙️ Diagnóstico opcional de duplicados
     # ------------------------------------------------------------
     duplicados = limpio[limpio.duplicated(subset=["PEDIDO"], keep=False)]
-
     if not duplicados.empty:
         print(f"\n⚠️ Se detectaron {len(duplicados)} pedidos duplicados. Se marcarán en una hoja aparte.")
         duplicados["OBSERVACION"] = "DUPLICADO DETECTADO"
-
         out_duplicados = out.parent / f"Duplicados_{out.stem}.xlsx"
         duplicados.to_excel(out_duplicados, index=False)
         print(f"📄 Archivo de duplicados generado: {out_duplicados}")
@@ -306,7 +381,6 @@ def main():
     print(f"\n✅ Limpieza completada con éxito: {out}")
     print("📊 Hoja 'RESUMEN' generada con totales por estado.")
 
-    
-if __name__ == "__main__":
-  main()
 
+if __name__ == "__main__":
+    main()

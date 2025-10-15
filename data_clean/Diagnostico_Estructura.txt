@@ -1,0 +1,51 @@
+------------------------------------------------------------
+📋 DIAGNÓSTICO DE ESTRUCTURA DE ARCHIVOS LIMPIOS - MERGE ANS
+------------------------------------------------------------
+
+🗂️ Archivo: HV_limpio.xlsx
+Total columnas detectadas: 12
+   - PEDIDO
+   - MUNICIPIO
+   - FECHA_INGRESO
+   - FECHA_INICIO_ANS
+   - ZONA
+   - SECTOR
+   - DIAS_CUMP
+   - FECHA_LIMITE
+   - DIAS_TRANSCURRIDOS
+   - DIAS_RESTANTES
+   - ESTADO
+   - ESTADO_DIGITADO
+
+🗂️ Archivo: PUNTOS_limpio.xlsx
+Total columnas detectadas: 13
+   - PEDIDO
+   - PEDIDO.1
+   - MUNICIPIO
+   - FECHA_INGRESO
+   - FECHA_INICIO_ANS
+   - ZONA
+   - SECTOR
+   - DIAS_CUMP
+   - FECHA_LIMITE
+   - DIAS_TRANSCURRIDOS
+   - DIAS_RESTANTES
+   - ESTADO
+   - ESTADO_DIGITADO
+
+🗂️ Archivo: PREPAGO_limpio.xlsx
+Total columnas detectadas: 12
+   - PEDIDO
+   - MUNICIPIO
+   - FECHA_INGRESO
+   - FECHA_INICIO_ANS
+   - ZONA
+   - SECTOR
+   - DIAS_CUMP
+   - FECHA_LIMITE
+   - DIAS_TRANSCURRIDOS
+   - DIAS_RESTANTES
+   - ESTADO
+   - ESTADO_DIGITADO
+
+✅ Validación completada. No se detectaron errores estructurales.
